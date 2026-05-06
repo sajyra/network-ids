@@ -13,7 +13,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	grpcServer = grpc.NewServer();
+	grpcServer := grpc.NewServer();
 	idsServer := coordinatorgrpc.NewIDSServer()
 	pb.RegisterIDSServiceServer(grpcServer, idsServer)
 	log.Println("[COORDINATOR] Listening on :50051")
