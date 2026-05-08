@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"time"
-
+	coordinatorredis "github.com/sanjay-rajjan/network-ids/coordinator/redis"
 	pb "github.com/sanjay-rajjan/network-ids/proto/ids"
 )
 
 type IDSServer struct {
 	pb.UnimplementedIDSServiceServer
+	publisher *coordinatorredis.Publisher
 }
 
-func NewIDSServer() *IDSServer {
-	return &IDSServer{}
+func NewIDSServer(publisher *coordinatorredis.Publisher) *IDSServer {
+	return &IDSServer{publisher: publisher}
 }
 
 func (s *IDSServer) ReportThreat(stream pb.IDSService_ReportThreatServer) error {
@@ -30,12 +30,9 @@ func (s *IDSServer) ReportThreat(stream pb.IDSService_ReportThreatServer) error 
 
 		log.Printf("[Coordinator] Threat Received | IP: %s | Type: %s | Node: %s", event.SourceIp, event.Type, event.NodeId)
 
-		cmd := &pb.BlockCommand{
-			SourceIp: event.SourceIp, 
-			IssuedAt: time.Now().UnixNano(),
-		}
-		if err := stream.Send(cmd); err != nil {
-			return fmt.Errorf("Error sending block command: %w", err)
+		
+		if err := s.publisher.PublishBlock(stream.Context(), event.SourceIp); err != nil {
+			log.Printf("[Coordinator] Failed to publish block: %v", err)
 		}
 	}
 

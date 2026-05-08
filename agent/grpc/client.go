@@ -36,21 +36,6 @@ func (c *IDSClient) StartStreaming(ctx context.Context) error {
 		return fmt.Errorf("failed to open stream: %w", err)
 	}
 
-	go func() {
-		for {
-			cmd, err := stream.Recv()
-			if err != nil {
-				log.Printf("[Agent-%s] Stream closed: %v", c.nodeID, err)
-				return
-			}
-			log.Printf("[Agent-%s] Block command received | IP: %s | IssuedAt: %d",
-				c.nodeID,
-				cmd.SourceIp,
-				cmd.IssuedAt,
-			)
-		}
-	}()
-
 	for {
 		event := &pb.ThreatEvent{
 			SourceIp:  "192.168.1.100",

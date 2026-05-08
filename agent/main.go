@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
+	agentredis "github.com/sanjay-rajjan/network-ids/agent/redis"
 	agentgrpc "github.com/sanjay-rajjan/network-ids/agent/grpc"
 )
 
@@ -16,11 +16,16 @@ func main() {
 		nodeID = "node-1"
 	}
 
-	log.Printf("[AGENT-%s] Starting up", nodeID)
+	log.Printf("[Agent-%s] Starting up", nodeID)
+
+	subscriber, err := agentredis.NewSubscriber("localhost:6379", nodeID)
+	if err != nil {
+		log.Fatalf("[AGENT-%s] Failed to connect to Redis: %v", nodeID, err)
+	}
 
 	client, err := agentgrpc.NewIDSClient("localhost:50051", nodeID)
 	if err != nil {
-		log.Fatalf("[AGENT-%s] Failed to connect to coordinator: %v", nodeID, err)
+		log.Fatalf("[Agent-%s] Failed to connect to coordinator: %v", nodeID, err)
 	}
 	defer client.Close()
 
@@ -32,13 +37,23 @@ func main() {
 
 	go func() {
 		sig := <-sigChan
-		log.Printf("[AGENT-%s] Received signal %v, shutting down", nodeID, sig)
+		log.Printf("[Agent-%s] Received signal %v, shutting down", nodeID, sig)
 		cancel()
 	}()
 
-	log.Printf("[AGENT-%s] Connected to coordinator, starting stream", nodeID)
+	go func() {
+		err := subscriber.Subscribe(ctx, func(ip string) {
+			log.Printf("[Agent-%s] Blocking IP: %s", nodeID, ip)
+		})
+		if err != nil {
+			log.Printf("[AGENT-%s] Subscriber error: %v", nodeID, err)
+		}
+	}()
+
+	log.Printf("[Agent-%s] Connected to coordinator, starting stream", nodeID)
+	
 	if err := client.StartStreaming(ctx); err != nil {
-		log.Printf("[AGENT-%s] Streaming stopped: %v", nodeID, err)
+		log.Printf("[Agent-%s] Streaming stopped: %v", nodeID, err)
 		os.Exit(1)
 	}
 }
