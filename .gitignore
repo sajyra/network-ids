@@ -1,0 +1,5 @@
+# ePBF compiled objects
+*.o
+
+# OS Files
+.DS_Store
