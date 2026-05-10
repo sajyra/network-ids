@@ -1,5 +1,9 @@
 # ePBF compiled objects
 *.o
 
+# Go build output
+/agent/agent
+/coordinator/coordinator
+
 # OS Files
 .DS_Store

@@ -20,7 +20,7 @@ func main() {
 
 	subscriber, err := agentredis.NewSubscriber("localhost:6379", nodeID)
 	if err != nil {
-		log.Fatalf("[AGENT-%s] Failed to connect to Redis: %v", nodeID, err)
+		log.Fatalf("[Agent-%s] Failed to connect to Redis: %v", nodeID, err)
 	}
 
 	client, err := agentgrpc.NewIDSClient("localhost:50051", nodeID)
@@ -46,12 +46,12 @@ func main() {
 			log.Printf("[Agent-%s] Blocking IP: %s", nodeID, ip)
 		})
 		if err != nil {
-			log.Printf("[AGENT-%s] Subscriber error: %v", nodeID, err)
+			log.Printf("[Agent-%s] Subscriber error: %v", nodeID, err)
 		}
 	}()
 
 	log.Printf("[Agent-%s] Connected to coordinator, starting stream", nodeID)
-	
+
 	if err := client.StartStreaming(ctx); err != nil {
 		log.Printf("[Agent-%s] Streaming stopped: %v", nodeID, err)
 		os.Exit(1)
