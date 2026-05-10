@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	pb "github.com/sanjay-rajjan/network-ids/proto/ids"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"github.com/sanjay-rajjan/network-ids/pkg/types"
 )
 
 type IDSClient struct {
@@ -30,31 +30,38 @@ func NewIDSClient(coordinatorAddr string, nodeID string) (*IDSClient, error) {
 	}, nil
 }
 
-func (c *IDSClient) StartStreaming(ctx context.Context) error {
+func (c *IDSClient) StartStreaming(ctx context.Context, events <-chan types.ThreatEvent) error {
 	stream, err := c.client.ReportThreat(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open stream: %w", err)
 	}
 
 	for {
-		event := &pb.ThreatEvent{
-			SourceIp:  "192.168.1.100",
-			Type:      "SYN_FLOOD",
-			Timestamp: time.Now().UnixNano(),
-			NodeId:    c.nodeID,
+		select {
+		case event, ok := <-events:
+			if !ok {
+				return fmt.Errorf("event channel closed")
+			}
+			pbEvent := &pb.ThreatEvent{
+				SourceIp: event.SourceIP,
+				Type: string(event.Type),
+				Timestamp: event.Timestamp,
+				NodeId: event.NodeID,
+			}
+
+			if err := stream.Send(pbEvent); err != nil {
+				return fmt.Errorf("failed to send event: %w", err)
+			}
+			log.Printf("[Agent-%s] Sent threat event | IP: %s | Type: %s",
+				c.nodeID,
+				event.SourceIP,
+				string(event.Type),
+			)
+		
+		case <-ctx.Done():
+			return nil;
 		}
-
-		if err := stream.Send(event); err != nil {
-			return fmt.Errorf("failed to send event: %w", err)
-		}
-
-		log.Printf("[AGENT-%s] Sent threat event | IP: %s | Type: %s",
-			c.nodeID,
-			event.SourceIp,
-			event.Type,
-		)
-
-		time.Sleep(2 * time.Second)
+		
 	}
 }
 

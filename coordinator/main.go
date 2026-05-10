@@ -24,7 +24,7 @@ func main() {
 	grpcServer := grpc.NewServer();
 	idsServer := coordinatorgrpc.NewIDSServer(publisher)
 	pb.RegisterIDSServiceServer(grpcServer, idsServer)
-	log.Println("[COORDINATOR] Listening on :50051")
+	log.Println("[Coordinator] Listening on :50051")
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

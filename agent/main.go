@@ -1,3 +1,5 @@
+//go:build linux && arm64
+
 package main
 
 import (
@@ -8,6 +10,8 @@ import (
 	"syscall"
 	agentredis "github.com/sanjay-rajjan/network-ids/agent/redis"
 	agentgrpc "github.com/sanjay-rajjan/network-ids/agent/grpc"
+	agentebpf "github.com/sanjay-rajjan/network-ids/agent/ebpf"
+	"github.com/sanjay-rajjan/network-ids/pkg/types"
 )
 
 func main() {
@@ -16,7 +20,22 @@ func main() {
 		nodeID = "node-1"
 	}
 
-	log.Printf("[Agent-%s] Starting up", nodeID)
+	ifaceName := os.Getenv("IFACE")
+	if ifaceName == "" {
+		ifaceName = "eth0"
+	}
+
+	log.Printf("[Agent-%s] Starting up on interface %s", nodeID, ifaceName)
+
+	sensor, err := agentebpf.NewSensor(ifaceName)
+	if err != nil {
+		log.Fatalf("[Agent-%s] Failed to initialize eBPF sensor: %v", nodeID, err)
+	}
+	defer sensor.Close()
+	log.Printf("[Agent-%s] eBPF sensor initialized", nodeID)
+
+	events := make(chan types.ThreatEvent, 100)
+	sensor.ReadEvents(events)
 
 	subscriber, err := agentredis.NewSubscriber("localhost:6379", nodeID)
 	if err != nil {
@@ -44,6 +63,9 @@ func main() {
 	go func() {
 		err := subscriber.Subscribe(ctx, func(ip string) {
 			log.Printf("[Agent-%s] Blocking IP: %s", nodeID, ip)
+			if err := sensor.BlockIP(ip); err != nil {
+				log.Printf("[Agent-%s] Failed to block IP %s: %v", nodeID, ip, err)
+			}
 		})
 		if err != nil {
 			log.Printf("[Agent-%s] Subscriber error: %v", nodeID, err)
@@ -52,7 +74,7 @@ func main() {
 
 	log.Printf("[Agent-%s] Connected to coordinator, starting stream", nodeID)
 
-	if err := client.StartStreaming(ctx); err != nil {
+	if err := client.StartStreaming(ctx, events); err != nil {
 		log.Printf("[Agent-%s] Streaming stopped: %v", nodeID, err)
 		os.Exit(1)
 	}

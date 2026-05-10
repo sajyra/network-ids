@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/sanjay-rajjan/network-ids/pkg/types"
@@ -107,4 +108,27 @@ func (s *Sensor) ReadEvents(events chan<- types.ThreatEvent) {
 
 		}
 	}()
+}
+
+func (s* Sensor) BlockIP(ip string) error {
+	parsed := net.ParseIP(ip).To4()
+	if parsed == nil {
+		return fmt.Errorf("invalid IPv4 address: %s", ip)
+	}
+
+	key := binary.LittleEndian.Uint32(parsed)
+	value := uint32(1)
+
+	if err := s.objs.BlockedIps.Update(key, value, ebpf.UpdateAny); err != nil {
+		return fmt.Errorf("updating blocked_ips map: %w", err)
+	}
+
+	log.Printf("[Sensor] Blocked IP in kernel: %s", ip)
+	return nil
+}
+
+func (s* Sensor) Close() {
+	s.reader.Close()
+	s.link.Close()
+	s.objs.Close()
 }
