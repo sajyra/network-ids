@@ -25,6 +25,16 @@ func main() {
 		ifaceName = "eth0"
 	}
 
+	coordinatorAddr := os.Getenv("COORDINATOR_ADDR")
+	if coordinatorAddr == "" {
+		coordinatorAddr = "localhost:50051"
+	}
+
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
 	log.Printf("[Agent-%s] Starting up on interface %s", nodeID, ifaceName)
 
 	sensor, err := agentebpf.NewSensor(ifaceName)
@@ -37,12 +47,12 @@ func main() {
 	events := make(chan types.ThreatEvent, 100)
 	sensor.ReadEvents(events)
 
-	subscriber, err := agentredis.NewSubscriber("localhost:6379", nodeID)
+	subscriber, err := agentredis.NewSubscriber(redisAddr, nodeID)
 	if err != nil {
 		log.Fatalf("[Agent-%s] Failed to connect to Redis: %v", nodeID, err)
 	}
 
-	client, err := agentgrpc.NewIDSClient("localhost:50051", nodeID)
+	client, err := agentgrpc.NewIDSClient(coordinatorAddr, nodeID)
 	if err != nil {
 		log.Fatalf("[Agent-%s] Failed to connect to coordinator: %v", nodeID, err)
 	}

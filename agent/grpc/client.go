@@ -46,7 +46,7 @@ func (c *IDSClient) StartStreaming(ctx context.Context, events <-chan types.Thre
 				SourceIp: event.SourceIP,
 				Type: string(event.Type),
 				Timestamp: event.Timestamp,
-				NodeId: event.NodeID,
+				NodeId: c.nodeID,
 			}
 
 			if err := stream.Send(pbEvent); err != nil {
