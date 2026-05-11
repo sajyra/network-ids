@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"google.golang.org/grpc"
 	coordinatorgrpc "github.com/sanjay-rajjan/network-ids/coordinator/grpc"
 	coordinatorredis "github.com/sanjay-rajjan/network-ids/coordinator/redis"
@@ -11,8 +12,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+
 func main() {
-	publisher, err := coordinatorredis.NewPublisher("localhost:6379")
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
+	publisher, err := coordinatorredis.NewPublisher(redisAddr)
 	if err != nil {
 		log.Fatalf("failed to connect to Redis: %v", err)
 	}
