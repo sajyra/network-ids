@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"log"
 	"net"
-
+	
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/sanjay-rajjan/network-ids/pkg/types"
+	agentmetrics "github.com/sanjay-rajjan/network-ids/agent/metrics"
 )
 
 const (
@@ -98,6 +99,8 @@ func (s *Sensor) ReadEvents(events chan<- types.ThreatEvent) {
 			default:
 				continue
 			}
+
+			agentmetrics.ThreatsDetected.WithLabelValues(string(ttype)).Inc()
 
 			events <- types.ThreatEvent{
 				SourceIP:  ip.String(),

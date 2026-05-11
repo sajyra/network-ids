@@ -8,10 +8,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"net/http"
 	agentredis "github.com/sanjay-rajjan/network-ids/agent/redis"
 	agentgrpc "github.com/sanjay-rajjan/network-ids/agent/grpc"
 	agentebpf "github.com/sanjay-rajjan/network-ids/agent/ebpf"
 	"github.com/sanjay-rajjan/network-ids/pkg/types"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -44,6 +46,19 @@ func main() {
 	defer sensor.Close()
 	log.Printf("[Agent-%s] eBPF sensor initialized", nodeID)
 
+	metricsPort := os.Getenv("METRICS_PORT")
+	if metricsPort == "" {
+		metricsPort = "9091"
+	}
+	
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		log.Printf("[Agent-%s] Metrics available at :%s/metrics", nodeID, metricsPort)
+		if err := http.ListenAndServe(":"+metricsPort, nil); err != nil {
+			log.Fatalf("metrics server failed: %v", err)
+		}
+	}()
+	
 	events := make(chan types.ThreatEvent, 100)
 	sensor.ReadEvents(events)
 

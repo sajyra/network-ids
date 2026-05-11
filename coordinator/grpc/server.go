@@ -6,6 +6,7 @@ import (
 	"log"
 	coordinatorredis "github.com/sanjay-rajjan/network-ids/coordinator/redis"
 	pb "github.com/sanjay-rajjan/network-ids/proto/ids"
+	"github.com/sanjay-rajjan/network-ids/coordinator/metrics"
 )
 
 type IDSServer struct {
@@ -28,10 +29,10 @@ func (s *IDSServer) ReportThreat(stream pb.IDSService_ReportThreatServer) error 
 			return fmt.Errorf("error receiving event: %w", err)
 		}
 
+		metrics.ThreatsReceived.WithLabelValues(event.NodeId, event.Type).Inc()
 		log.Printf("[Coordinator] Threat Received | IP: %s | Type: %s | Node: %s", event.SourceIp, event.Type, event.NodeId)
-
 		
-		if err := s.publisher.PublishBlock(stream.Context(), event.SourceIp); err != nil {
+		if err := s.publisher.PublishBlock(stream.Context(), event.SourceIp, event.Timestamp); err != nil {
 			log.Printf("[Coordinator] Failed to publish block: %v", err)
 		}
 	}

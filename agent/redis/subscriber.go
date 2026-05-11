@@ -4,9 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log"
-
+	"encoding/json"
+	"time"
 	"github.com/redis/go-redis/v9"
+	agentmetrics "github.com/sanjay-rajjan/network-ids/agent/metrics"
 )
+
+type BlockMessage struct {
+	SourceIP string `json:"source_ip"`
+	DetectedAt int64 `json:"detected_at"`
+}
 
 type Subscriber struct {
 	client *redis.Client
@@ -41,8 +48,19 @@ func (s *Subscriber) Subscribe(ctx context.Context, onBlock func(ip string)) err
 	for {
 		select {
 		case msg := <-ch:
-			log.Printf("[Agent-%s] Block command received from Redis | IP: %s", s.nodeID, msg.Payload)
-			onBlock(msg.Payload)
+			var blockMsg BlockMessage
+			if err := json.Unmarshal([]byte(msg.Payload), &blockMsg); err != nil {
+				log.Printf("[Agent-%s] Failed to parse block message: %v", s.nodeID, err)
+				continue
+			}
+
+			now := time.Now().UnixNano()
+			latencySeconds := float64(now - blockMsg.DetectedAt) / float64(time.Second)
+			agentmetrics.PropagationLatency.Observe(latencySeconds)
+
+			log.Printf("[Agent-%s] Block command received from Redis | IP: %s | Latency: %.2fms", s.nodeID, blockMsg.SourceIP, latencySeconds*1000)
+			onBlock(blockMsg.SourceIP)
+
 		case <-ctx.Done():
 			log.Printf("[Agent-%s] Subscriber shutting down", s.nodeID)
 			return nil
