@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	
+	"time"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
@@ -83,7 +83,6 @@ func (s *Sensor) ReadEvents(events chan<- types.ThreatEvent) {
 
 			srcIP := binary.LittleEndian.Uint32(record.RawSample[0:4])
 			threatType := binary.LittleEndian.Uint32(record.RawSample[4:8])
-			timestamp := binary.LittleEndian.Uint64(record.RawSample[8:16])
 
 			ip := make(net.IP, 4)
 			binary.LittleEndian.PutUint32(ip, srcIP)
@@ -105,7 +104,7 @@ func (s *Sensor) ReadEvents(events chan<- types.ThreatEvent) {
 			events <- types.ThreatEvent{
 				SourceIP:  ip.String(),
 				Type:      ttype,
-				Timestamp: int64(timestamp),
+				Timestamp: time.Now().UnixNano(),
 				NodeID:    "",
 			}
 

@@ -7,10 +7,10 @@
 #include <bpf/bpf_endian.h>
 
 #define MAX_ENTRIES 1024
-#define SYN_THRESHOLD   100
-#define PORT_THRESHOLD  20
+#define SYN_THRESHOLD  100
+#define PORT_THRESHOLD  200
 #define SSH_THRESHOLD   10
-#define SSH_PORT    22
+#define SSH_PORT  22
 
 struct threat_event {
     __u32 src_ip;
@@ -18,9 +18,9 @@ struct threat_event {
     __u64 timestamp;
 };
 
-#define THREAT_SYN_FLOOD    1
-#define THREAT_PORT_SCAN    2
-#define THREAT_SSH_BRUTE   3
+#define THREAT_SYN_FLOOD  1
+#define THREAT_PORT_SCAN  2
+#define THREAT_SSH_BRUTE  3
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
