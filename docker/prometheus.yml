@@ -9,12 +9,8 @@ scrape_configs:
 
   - job_name: 'agent-node-1'
     static_configs:
-      - targets: ['host.docker.internal:9091']
+      - targets: ['100.26.97.92:9091']
 
   - job_name: 'agent-node-2'
     static_configs:
-      - targets: ['host.docker.internal:9092']
-
-  - job_name: 'agent-node-3'
-    static_configs:
-      - targets: ['host.docker.internal:9093']
+      - targets: ['54.145.136.6:9091']
