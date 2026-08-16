@@ -85,6 +85,11 @@ int detect_threats(struct xdp_md *ctx) {
         return XDP_PASS;
     }
 
+    // Whitelist - never block these IPs
+    __u32 my_mac_ip = bpf_htonl(0x2FDB0745); // 47.219.7.69 in hex, little-endian
+    if (src_ip == my_mac_ip)
+        return XDP_PASS;
+
     __u32 *blocked = bpf_map_lookup_elem(&blocked_ips, &src_ip);
     if (blocked) {
         return XDP_DROP;
