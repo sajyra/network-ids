@@ -42,7 +42,6 @@ func NewSensor(ifaceName string) (*Sensor, error) {
 	l, err := link.AttachXDP(link.XDPOptions{
 		Program:   objs.DetectThreats,
 		Interface: iface.Index,
-		Flags:     link.XDPGenericMode,
 	})
 	if err != nil {
 		objs.Close()

@@ -85,9 +85,10 @@ int detect_threats(struct xdp_md *ctx) {
         return XDP_PASS;
     }
 
-    // Whitelist - never block these IPs
-    __u32 my_mac_ip = bpf_htonl(0x2FDB0745); // 47.219.7.69 in hex, little-endian
-    if (src_ip == my_mac_ip)
+    // Whitelist management IPs
+    __u32 lima_mac = bpf_htonl(0xC0A80502); // 192.168.5.2 (Lima's Mac)
+    __u32 aws_mac  = bpf_htonl(0x2FDB0745); // 47.219.7.69 (Public Mac IP)
+    if (src_ip == lima_mac || src_ip == aws_mac)
         return XDP_PASS;
 
     __u32 *blocked = bpf_map_lookup_elem(&blocked_ips, &src_ip);
