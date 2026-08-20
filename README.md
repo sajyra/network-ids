@@ -26,7 +26,7 @@ Each agent runs an eBPF/XDP program inside the Linux kernel that inspects every 
 
 | Component | Technology |
 |-----------|------------|
-| Packet inspection | eBPF/XDP (generic mode), C |
+| Packet inspection | eBPF/XDP, C |
 | Agent & Coordinator | Go |
 | Agent-Coordinator RPC | gRPC + Protocol Buffers |
 | Cluster propagation | Redis pub/sub |
